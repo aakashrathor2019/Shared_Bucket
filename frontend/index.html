@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-Time Cart</title>
+</head>
+<body>
+
+<h2>Real-Time Collaborative Cart</h2>
+
+<input id="msg" placeholder="Enter item" />
+<button onclick="addItem()">Add Item</button>
+
+<h3>Total Items: <span id="count">0</span></h3>
+
+<h3>Cart Items</h3>
+<ul id="messages"></ul>
+
+<h3>Activity</h3>
+<ul id="activity"></ul>
+
+<script>
+let username = prompt("Enter your name:");
+
+let ws = new WebSocket("ws://127.0.0.1:8000/ws");
+
+ws.onopen = () => {
+    console.log("Connected to WebSocket");
+};
+
+ws.onmessage = (event) => {
+    let data = JSON.parse(event.data);
+
+    let cart = data.cart;
+    let ul = document.getElementById("messages");
+    ul.innerHTML = "";
+
+    cart.forEach(item => {
+        let li = document.createElement("li");
+        li.innerText = item;
+
+        let btn = document.createElement("button");
+        btn.innerText = "Remove";
+
+        btn.onclick = () => {
+            ws.send(JSON.stringify({
+                action: "remove",
+                item: item,
+                user: username
+            }));
+        };
+
+        li.appendChild(btn);
+        ul.appendChild(li);
+    });
+
+    document.getElementById("count").innerText = data.total;
+
+    if (data.message) {
+        let log = document.createElement("li");
+        log.innerText = data.message;
+        document.getElementById("activity").appendChild(log);
+    }
+};
+
+function addItem() {
+    let input = document.getElementById("msg");
+
+    ws.send(JSON.stringify({
+        action: "add",
+        item: input.value,
+        user: username
+    }));
+
+    input.value = "";
+}
+</script>
+
+</body>
+</html>
